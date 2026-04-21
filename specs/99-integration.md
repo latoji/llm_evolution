@@ -1,6 +1,6 @@
 # Track Z — Integration & Smoke Test
 
-**Model**: `claude-opus-4-6`
+**Model**: `claude-sonnet-4-6`
 **Dependencies**: All tracks (0, A, B1, B2, C, D1, D2, E) complete
 
 ## Scope

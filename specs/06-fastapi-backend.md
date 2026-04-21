@@ -1,6 +1,6 @@
 # Track D2 — FastAPI Backend (HTTP + WebSocket)
 
-**Model**: `claude-opus-4-6`
+**Model**: `claude-sonnet-4-6`
 **Dependencies**: Tracks 0, A, B1, B2, C, D1 complete
 
 ## Scope

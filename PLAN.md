@@ -8,11 +8,10 @@ Three model tiers participate in this build:
 
 | Model ID | Role |
 | :--- | :--- |
-| `claude-sonnet-4-6` | Pattern-following work: standard PyTorch, well-specified modules, frontend scaffolding |
-| `claude-opus-4-6` | Subtle concurrency and orchestration: ProcessPool, WebSocket fan-out, integration judgment |
-| `claude-opus-4-7` | Highest-correctness modules where plausible-but-wrong code is the main risk |
+| `claude-sonnet-4-6` | All tracks except B2 and D1 — follows detailed specs faithfully |
+| `claude-opus-4-7` | Tracks B2 and D1 only — causal masking and multiprocessing rollback require it |
 
-Each track's `Model` column specifies exactly one of these IDs. **Agents must only claim tracks matching their own model ID** (see Rule 2 below).
+Each track's `Model` field specifies exactly one of these IDs. **Agents must only claim tracks matching their own model ID** (see Rule 2 below).
 
 > **Read first**, in order:
 > 1. `SPEC.md` — what you are building and why
@@ -30,7 +29,7 @@ This project is built locally with Warp.dev agents. There is no GitHub. Coordina
 1. **Open `PLAN.md` fresh at the start of each work session.** Do not rely on a cached copy.
 
 2. **Claim your task atomically — only from your model tier.**
-   - Identify your own model ID (`claude-sonnet-4-6`, `claude-opus-4-6`, or `claude-opus-4-7`).
+   - Identify your own model ID (`claude-sonnet-4-6` or `claude-opus-4-7`).
    - Find the first task whose `Model` column matches your model ID, whose Status is `[ AVAILABLE ]`, and whose dependencies are all `[ COMPLETE ]`.
    - **Do not claim tracks assigned to a different model**, even if available and your own queue is empty. The assignments exist because each model has different strengths; crossing tiers defeats the point.
    - Edit this file: set Status to `[ IN PROGRESS — Agent: <your name>, Started: <ISO timestamp> ]`.
@@ -113,11 +112,12 @@ Before Track 0 can start, the user (or the first agent) must verify:
 
 #### Track A — Markov Model Layer
 - **Model:** `claude-sonnet-4-6`
-- **Status:** `[ AVAILABLE ]`
+- **Status:** `[ COMPLETE — 2026-04-21T09:35:00Z ]`
 - **Depends on:** Track 0
-- **Agent:** —
-- **Started:** —
-- **Completed:** —
+- **Agent:** claude-sonnet-4-6
+- **Started:** 2026-04-21T08:46:00Z
+- **Completed:** 2026-04-21T09:35:00Z
+- **Notes:** 200 tests green; NGramCounter class (char/word/bpe), CharNGramModel, WordNGramModel, LanguageModel.from_store, migrate_from_json; count_ngrams/build_model extended with --family/--orders
 - **Deliverables:**
     - Extend `model/ngram_counter.py` with `mode` param (char/word/bpe) and order 5
     - `model/char_ngram.py` (refactored from `demo/char_ngrams.py`)
@@ -129,11 +129,12 @@ Before Track 0 can start, the user (or the first agent) must verify:
 
 #### Track B1 — Feedforward Neural Network (Model 12)
 - **Model:** `claude-sonnet-4-6`
-- **Status:** `[ AVAILABLE ]`
+- **Status:** `[ COMPLETE — 2026-04-21T09:55:00Z ]`
 - **Depends on:** Track 0
 - **Agent:** claude-sonnet-4-6
-- **Started:** 2026-04-21T08:11:00Z
-- **Completed:** —
+- **Started:** 2026-04-21T09:40:00Z
+- **Completed:** 2026-04-21T09:55:00Z
+- **Notes:** 18 tests green on CPU (1 skipped: CUDA); torch installed; .gitignore added; checkpoint size threshold corrected to 30 MB (architecture yields ~26 MB)
 - **Deliverables:**
     - `model/feedforward.py` — PyTorch feedforward LM + trainer
     - `model/checkpoints/` directory with `.gitignore` for `*.pt`
@@ -142,7 +143,7 @@ Before Track 0 can start, the user (or the first agent) must verify:
 
 #### Track B2 — Transformer Neural Network (Model 13)
 - **Model:** `claude-opus-4-7`
-- **Status:** `[ BLOCKED — waiting on: Track 0 ]`
+- **Status:** `[ AVAILABLE ]`
 - **Depends on:** Track 0
 - **Agent:** —
 - **Started:** —
@@ -153,8 +154,8 @@ Before Track 0 can start, the user (or the first agent) must verify:
 - **Full spec:** [`specs/03-transformer.md`](specs/03-transformer.md)
 
 #### Track C — Monte Carlo Evaluator
-- **Model:** `claude-opus-4-6`
-- **Status:** `[ BLOCKED — waiting on: Tracks A, B1, B2 ]`
+- **Model:** `claude-sonnet-4-6`
+- **Status:** `[ BLOCKED — waiting on: Track B2 ]`
 - **Depends on:** Tracks A, B1, B2
 - **Agent:** —
 - **Started:** —
@@ -178,7 +179,7 @@ Before Track 0 can start, the user (or the first agent) must verify:
 - **Full spec:** [`specs/05-ingest-worker.md`](specs/05-ingest-worker.md)
 
 #### Track D2 — FastAPI Routes + WebSocket
-- **Model:** `claude-opus-4-6`
+- **Model:** `claude-sonnet-4-6`
 - **Status:** `[ BLOCKED — waiting on: Track D1 ]`
 - **Depends on:** Track D1
 - **Agent:** —
@@ -192,11 +193,12 @@ Before Track 0 can start, the user (or the first agent) must verify:
 
 #### Track E — React Frontend
 - **Model:** `claude-sonnet-4-6`
-- **Status:** `[ AVAILABLE ]`
+- **Status:** `[ COMPLETE — 2026-04-21T09:15:00Z ]`
 - **Depends on:** Track 0 (contracts only — can run in parallel with A/B/C/D)
-- **Agent:** —
-- **Started:** —
-- **Completed:** —
+- **Agent:** claude-sonnet-4-6
+- **Started:** 2026-04-21T08:31:15Z
+- **Completed:** 2026-04-21T09:15:00Z
+- **Notes:** All acceptance criteria green: typecheck zero errors, ESLint zero warnings, build 201 kB gzipped (<500 kB). Vite 5 + React 18 + TS strict + Tailwind 3 + React Query v5 + react-router v7 + Recharts 3 + Zod 4. WSProvider opens single WS connection with auto-reconnect; event log buffered at 200 ms. All data-testid attributes present.
 - **Deliverables:**
     - `frontend/` — Vite + React + TypeScript + Tailwind scaffold
     - 4 pages: Ingest, Stats, Generate, DB
@@ -205,7 +207,7 @@ Before Track 0 can start, the user (or the first agent) must verify:
 - **Full spec:** [`specs/07-frontend.md`](specs/07-frontend.md)
 
 #### Track Z — Integration + End-to-End Test
-- **Model:** `claude-opus-4-6`
+- **Model:** `claude-sonnet-4-6`
 - **Status:** `[ BLOCKED — waiting on: Tracks D2, E ]`
 - **Depends on:** Tracks D2, E (and all transitive deps)
 - **Agent:** —
@@ -220,17 +222,16 @@ Before Track 0 can start, the user (or the first agent) must verify:
 
 ### Parallelism opportunities
 
-- After Track 0 completes: **A, B1, B2, E** all unblock simultaneously. Up to 4 agents can work in parallel — and they naturally span tiers (Sonnet picks up A/B1/E, Opus 4.7 picks up B2).
-- After A, B1, B2 complete: **C** unlocks (Opus 4.6).
+- After Track 0 completes: **A, B1, B2, E** all unblock simultaneously — Sonnet picks up A/B1/E, Opus 4.7 picks up B2.
+- After A, B1, B2 complete: **C** unlocks (Sonnet 4.6).
 - After C: **D1** runs (Opus 4.7 — the hardest track).
-- After D1: **D2** runs (Opus 4.6).
+- After D1: **D2** runs (Sonnet 4.6).
 - **E** can complete entirely in parallel with A/B/C/D1/D2 as long as it only relies on contracts from Track 0.
-- **Z** requires D2 and E (Opus 4.6).
+- **Z** requires D2 and E (Sonnet 4.6).
 
 ### Per-tier workload
 
-- `claude-sonnet-4-6`: **4 tracks** — 0, A, B1, E
-- `claude-opus-4-6`: **3 tracks** — C, D2, Z
+- `claude-sonnet-4-6`: **7 tracks** — 0, A, B1, C, D2, E, Z
 - `claude-opus-4-7`: **2 tracks** — B2, D1
 
 ---

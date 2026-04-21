@@ -1,6 +1,6 @@
 # Track C — Monte Carlo Accuracy Evaluator
 
-**Model**: `claude-opus-4-6`
+**Model**: `claude-sonnet-4-6`
 **Dependencies**: Tracks A, B1, B2 complete
 
 ## Scope

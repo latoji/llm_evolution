@@ -1,21 +1,16 @@
 # Warp Launch Configuration — LLM Evolution Build
 #
-# SETUP (one-time):
-#   Windows: copy this file to %APPDATA%\Warp\launch_configurations\llm_build.yaml
-#   Then in Warp: click the Warp icon (top-left) → Launch Configurations → llm_build
-#
-# BEFORE LAUNCHING:
-#   Make sure your WSL venv is set up:
-#     wsl -e bash -c "cd /home/latoj/warp_projects/LLM_prototype && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
+# Open 3 panes manually in Warp and run one command per pane (see multi-agent-prompts.md).
+# OR copy this file to %APPDATA%\Warp\launch_configurations\llm_build.yaml and use
+# Warp icon → Launch Configurations → llm_build.
 #
 # LAYOUT:
-#   ┌─────────────────────┬──────────────────────┐
-#   │  Sonnet 4.6         │  Opus 4.6            │
-#   │  (Tracks 0,A,B1,E)  │  (Tracks C,D2,Z)     │
-#   ├─────────────────────┼──────────────────────┤
-#   │  Opus 4.7           │  Status              │
-#   │  (Tracks B2,D1)     │  (live PLAN.md view) │
-#   └─────────────────────┴──────────────────────┘
+#   ┌──────────────────────────────┬──────────────────────┐
+#   │  Sonnet 4.6                  │  Opus 4.7            │
+#   │  Tracks 0,A,B1,C,D2,E,Z     │  Tracks B2, D1       │
+#   ├──────────────────────────────┴──────────────────────┤
+#   │  Build Status (live PLAN.md view)                   │
+#   └─────────────────────────────────────────────────────┘
 
 name: llm_build
 windows:
@@ -24,16 +19,13 @@ windows:
         layout:
           rows:
             - panes:
-                - title: "Sonnet 4.6 — Tracks 0, A, B1, E"
+                - title: "Sonnet 4.6 — Tracks 0,A,B1,C,D2,E,Z"
                   commands:
                     - "wsl -e bash -c \"cd /home/latoj/warp_projects/LLM_prototype && source venv/bin/activate && bash scripts/watch_tier.sh claude-sonnet-4-6\""
-                - title: "Opus 4.6 — Tracks C, D2, Z"
-                  commands:
-                    - "wsl -e bash -c \"cd /home/latoj/warp_projects/LLM_prototype && source venv/bin/activate && bash scripts/watch_tier.sh claude-opus-4-6\""
-            - panes:
                 - title: "Opus 4.7 — Tracks B2, D1"
                   commands:
                     - "wsl -e bash -c \"cd /home/latoj/warp_projects/LLM_prototype && source venv/bin/activate && bash scripts/watch_tier.sh claude-opus-4-7\""
+            - panes:
                 - title: "Build Status"
                   commands:
                     - "wsl -e bash -c \"watch -n 15 \\\"grep -E '^#### Track|Status' /home/latoj/warp_projects/LLM_prototype/PLAN.md | paste - -\\\"\""

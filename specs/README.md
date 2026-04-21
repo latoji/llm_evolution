@@ -15,11 +15,11 @@ This folder contains per-track implementation specs for the build plan in `../PL
 | A | [01-markov-models.md](01-markov-models.md) | All 11 Markov models (char/word/BPE) | `claude-sonnet-4-6` |
 | B1 | [02-feedforward.md](02-feedforward.md) | Model 12 (feedforward neural net) | `claude-sonnet-4-6` |
 | B2 | [03-transformer.md](03-transformer.md) | Model 13 (Transformer) | `claude-opus-4-7` |
-| C | [04-monte-carlo.md](04-monte-carlo.md) | 50-run accuracy evaluator | `claude-opus-4-6` |
+| C | [04-monte-carlo.md](04-monte-carlo.md) | 50-run accuracy evaluator | `claude-sonnet-4-6` |
 | D1 | [05-ingest-worker.md](05-ingest-worker.md) | Multiprocessing orchestration | `claude-opus-4-7` |
-| D2 | [06-fastapi-backend.md](06-fastapi-backend.md) | HTTP routes + WebSocket | `claude-opus-4-6` |
+| D2 | [06-fastapi-backend.md](06-fastapi-backend.md) | HTTP routes + WebSocket | `claude-sonnet-4-6` |
 | E | [07-frontend.md](07-frontend.md) | React + Vite app, all 4 pages | `claude-sonnet-4-6` |
-| Z | [99-integration.md](99-integration.md) | End-to-end wiring and smoke test | `claude-opus-4-6` |
+| Z | [99-integration.md](99-integration.md) | End-to-end wiring and smoke test | `claude-sonnet-4-6` |
 
 ## Spec File Structure
 

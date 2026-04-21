@@ -1,0 +1,43 @@
+/** NavBar — top navigation bar for the four app pages.
+ *
+ * Displays a WebSocket connectivity dot sourced from WSContext.
+ */
+import { NavLink } from "react-router-dom";
+import { useWSContext } from "../context/WSContext";
+
+const NAV_LINKS = [
+  { to: "/ingest", label: "Ingest" },
+  { to: "/stats", label: "Stats" },
+  { to: "/generate", label: "Generate" },
+  { to: "/db", label: "DB" },
+] as const;
+
+function linkClass({ isActive }: { isActive: boolean }): string {
+  return isActive
+    ? "font-semibold text-blue-600 underline underline-offset-4"
+    : "text-slate-600 hover:text-blue-500";
+}
+
+export function NavBar() {
+  const { connected } = useWSContext();
+
+  return (
+    <nav className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-6">
+      <span className="font-bold text-slate-800 mr-4 text-lg">LLM Evolution</span>
+      {NAV_LINKS.map(({ to, label }) => (
+        <NavLink key={to} to={to} className={linkClass}>
+          {label}
+        </NavLink>
+      ))}
+      <div className="ml-auto flex items-center gap-2 text-sm text-slate-500">
+        <span
+          className={`inline-block w-2.5 h-2.5 rounded-full ${
+            connected ? "bg-green-500" : "bg-red-400"
+          }`}
+          title={connected ? "WebSocket connected" : "WebSocket disconnected"}
+        />
+        <span>{connected ? "Live" : "Reconnecting…"}</span>
+      </div>
+    </nav>
+  );
+}
