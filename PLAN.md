@@ -143,11 +143,12 @@ Before Track 0 can start, the user (or the first agent) must verify:
 
 #### Track B2 — Transformer Neural Network (Model 13)
 - **Model:** `claude-opus-4-7`
-- **Status:** `[ AVAILABLE ]`
+- **Status:** `[ COMPLETE — 2026-04-21T09:10:31Z ]`
 - **Depends on:** Track 0
-- **Agent:** —
-- **Started:** —
-- **Completed:** —
+- **Agent:** claude-opus-4-7
+- **Started:** 2026-04-21T09:02:17Z
+- **Completed:** 2026-04-21T09:10:31Z
+- **Notes:** 31 CPU tests green (2 CUDA tests skipped); full suite 249 passed / 3 skipped. Causal mask leakage test included and passing; sinusoidal PE, pre-norm GPT-style blocks, shift-by-one next-token loss, last-position generation, checkpoint round-trip all verified.
 - **Deliverables:**
     - `model/transformer.py` — PyTorch causal Transformer LM + trainer
     - `tests/test_transformer.py` (must include causal-mask-leakage test)
