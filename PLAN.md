@@ -156,11 +156,12 @@ Before Track 0 can start, the user (or the first agent) must verify:
 
 #### Track C — Monte Carlo Evaluator
 - **Model:** `claude-sonnet-4-6`
-- **Status:** `[ BLOCKED — waiting on: Track B2 ]`
+- **Status:** `[ COMPLETE — 2026-04-21T09:48:00Z ]`
 - **Depends on:** Tracks A, B1, B2
-- **Agent:** —
-- **Started:** —
-- **Completed:** —
+- **Agent:** claude-sonnet-4-6
+- **Started:** 2026-04-21T09:15:20Z
+- **Completed:** 2026-04-21T09:48:00Z
+- **Notes:** 30 tests green; MonteCarloEvaluator with ProcessPoolExecutor (one task/Markov model), 13 MODELS registry, _score_sample_text helper, mc_model_start+mc_complete progress callbacks, DB insert via store.insert_accuracy
 - **Deliverables:**
     - `eval/monte_carlo.py` — 50-run accuracy evaluator for all 13 models
     - `tests/test_monte_carlo.py`
@@ -168,24 +169,27 @@ Before Track 0 can start, the user (or the first agent) must verify:
 
 #### Track D1 — Ingest Worker (multiprocessing core)
 - **Model:** `claude-opus-4-7`
-- **Status:** `[ BLOCKED — waiting on: Track C ]`
+- **Status:** `[ COMPLETE — 2026-04-21T10:48:57Z ]`
 - **Depends on:** Track C
-- **Agent:** —
-- **Started:** —
-- **Completed:** —
+- **Agent:** claude-opus-4-7
+- **Started:** 2026-04-21T09:48:30Z
+- **Completed:** 2026-04-21T10:48:57Z
+- **Notes:** 26 fast + 1 slow tests green (full suite 305 passed / 3 CUDA-skipped). spawn-context multiprocessing worker; manual delta-based rollback (DuckDB MVCC prevents chunk-wide transactions when MC child processes must read mid-ingest state); deepcopy state_dict snapshots for NN rollback; .pt file cleanup on reject; pause checked only between chunks; safe_put drops events on queue full. Helpers split into `api/ingest_helpers.py` to keep every file under the 400-line cap; pure-function coverage in `tests/test_ingest_helpers.py`.
 - **Deliverables:**
     - `api/ingest_worker.py` — multiprocessing orchestration, rollback, pause
+    - `api/ingest_helpers.py` — chunking, pre-screening, n-gram delta apply/revert, factories
     - `api/worker_types.py`
-    - `tests/test_ingest_worker.py`
+    - `tests/test_ingest_worker.py`, `tests/test_ingest_helpers.py`
 - **Full spec:** [`specs/05-ingest-worker.md`](specs/05-ingest-worker.md)
 
 #### Track D2 — FastAPI Routes + WebSocket
 - **Model:** `claude-sonnet-4-6`
-- **Status:** `[ BLOCKED — waiting on: Track D1 ]`
+- **Status:** `[ COMPLETE — 2026-04-21T11:30:00Z ]`
 - **Depends on:** Track D1
-- **Agent:** —
-- **Started:** —
-- **Completed:** —
+- **Agent:** claude-sonnet-4-6
+- **Started:** 2026-04-21T10:52:30Z
+- **Completed:** 2026-04-21T11:30:00Z
+- **Notes:** 50 new tests green (347 total / 3 skipped). FastAPI app with lifespan, CORS, 5 router groups; IngestUploadResponse/IngestStatusResponse/IngestPauseResponse contracts honoured; single relay_progress task drains mp.Queue and fans out to all WS clients; ALLOWED_TABLES whitelist with alias map (chunks→corpus_chunks, last_generations→None); generate endpoint dispatches to all 13 model families in thread executor; auto-correct via Validator.suggest; python-multipart installed as test dependency.
 - **Deliverables:**
     - `api/main.py`, `api/state.py`
     - `api/routes/{ingest,stats,generate,db,ws}.py`
@@ -209,11 +213,12 @@ Before Track 0 can start, the user (or the first agent) must verify:
 
 #### Track Z — Integration + End-to-End Test
 - **Model:** `claude-sonnet-4-6`
-- **Status:** `[ BLOCKED — waiting on: Tracks D2, E ]`
+- **Status:** `[ COMPLETE — 2026-04-21T11:46:00Z ]`
 - **Depends on:** Tracks D2, E (and all transitive deps)
-- **Agent:** —
-- **Started:** —
-- **Completed:** —
+- **Agent:** claude-sonnet-4-6
+- **Started:** 2026-04-21T11:31:00Z
+- **Completed:** 2026-04-21T11:46:00Z
+- **Notes:** 346 fast tests green / 3 skipped; typecheck zero errors, ESLint zero warnings. README.md, scripts/dev.sh, scripts/dev.ps1, scripts/seed_corpus.py, tests/test_integration.py (@pytest.mark.slow), frontend/playwright.config.ts, frontend/tests/e2e.spec.ts, pyproject.toml, requirements.txt, .gitignore all created.
 - **Deliverables:**
     - `README.md` quickstart, `scripts/dev.sh`, `scripts/seed_corpus.py`
     - `tests/test_integration.py`, `frontend/tests/e2e.spec.ts`

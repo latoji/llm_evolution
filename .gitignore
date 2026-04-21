@@ -1,4 +1,5 @@
 venv/
+.venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -10,6 +11,8 @@ build/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.idea/
+.vscode/
 
 # DuckDB runtime artifact
 db/llm_evolution.duckdb
@@ -17,6 +20,8 @@ db/llm_evolution.duckdb.wal
 
 # Neural net checkpoints
 model/checkpoints/*.pt
+model/counts/*.json
+model/counts/archive/
 
 # Tokenizer artifacts
 tokenizer/merges.json
@@ -25,7 +30,17 @@ tokenizer/vocab.json
 # Node
 node_modules/
 frontend/dist/
+frontend/node_modules/
+frontend/.vite/
 
 # Windows Zone.Identifier files
 *:Zone.Identifier
 ~$*
+
+# User uploads
+data/uploads/
+data/seed.txt
+
+# OS
+.DS_Store
+Thumbs.db

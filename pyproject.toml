@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks integration and end-to-end tests that are excluded from default runs",
+]
+testpaths = ["tests"]

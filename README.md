@@ -1,57 +1,105 @@
-# Token-Level N-Gram Language Model
+# LLM Evolution
 
-A BPE tokenizer combined with a Modified Kneser-Ney smoothed n-gram language model, built from scratch in Python.
+An educational app that lets you watch 13 language models grow in real time as you feed them text.
+
+Upload a `.txt` file. The pipeline splits it into chunks, trains 11 Markov models (character, word, and BPE n-grams in orders 1–5) and 2 neural models (feedforward and Transformer), then scores each model with 50 Monte Carlo generations. Watch accuracy evolve on the Stats page.
+
+## Requirements
+
+- Python 3.11+
+- Node.js 20+ and npm
+- ~2 GB free disk space
+- (Optional) CUDA GPU with 4+ GB VRAM — CPU-only mode works but is ~5–10× slower for neural training
+
+## Install
+
+```bash
+# Python backend
+python3 -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# React frontend
+cd frontend && npm install && cd ..
+```
+
+Install Playwright browsers (needed for E2E tests only):
+
+```bash
+cd frontend && npx playwright install chromium && cd ..
+```
+
+## Run
+
+```bash
+bash scripts/dev.sh
+```
+
+Opens the app at **http://localhost:5173**. Press `Ctrl+C` to stop.
+
+Windows users:
+
+```powershell
+pwsh scripts/dev.ps1
+```
+
+To change ports, set `VITE_API_BASE=http://localhost:<port>` in the environment and pass `--port <port>` to uvicorn.
+
+## First Steps
+
+1. Click **Ingest** → drag a `.txt` file (plain English prose works best).
+2. Watch the progress panel fill with chunk events.
+3. When ingest completes, open **Stats** to see accuracy curves for all 13 models.
+4. Open **Generate** → choose a word count → click Generate to sample from every model at once.
+5. Open **DB** to browse raw DuckDB tables.
 
 ## Architecture
 
 ```
-Data Pipeline → BPE Tokenizer → N-Gram Counts → Smoothed LM → Text Generator
+Browser (React / Vite :5173)
+  │
+  │  HTTP REST + WebSocket
+  ▼
+FastAPI (uvicorn :8000)
+  ├── /ingest/*    ──► IngestWorker (multiprocessing.Process)
+  │                        │
+  │                        ├── char / word / BPE n-gram counters → DuckDB
+  │                        ├── FeedforwardTrainer (PyTorch)
+  │                        ├── TransformerTrainer (PyTorch)
+  │                        └── MonteCarloEvaluator (ProcessPoolExecutor)
+  │                                  │
+  │                                  └── model_accuracy rows → DuckDB
+  ├── /stats/*     ──► DuckDB reads
+  ├── /generate    ──► CharNGramModel / WordNGramModel / neural trainers
+  ├── /db/*        ──► DuckDB read-only inspection
+  └── /ws/progress ──► relay_progress task (mp.Queue → WebSocket fan-out)
 ```
 
-- **Tokenizer**: Byte Pair Encoding (GPT-2 style, vocab_size=8000), no external libraries
-- **N-gram model**: 4-gram with Modified Kneser-Ney smoothing and backoff
-- **Generator**: Markov chain sampling with temperature, top-k, and top-p controls
+## Reset
 
-## Quick Start
+- Click **Reset DB** on the DB page, or:
 
 ```bash
-pip install -r requirements.txt
-
-# 1. Download corpus
-python data/download_gutenberg.py
-python data/download_wikipedia.py
-
-# 2. Clean and split
-python data/clean.py
-python data/split.py
-
-# 3. Train tokenizer
-python tokenizer/train_tokenizer.py
-
-# 4. Count n-grams
-python model/count_ngrams.py
-
-# 5. Build language model
-python model/build_model.py
-
-# 6. Generate text
-python generate/cli.py --prompt "The meaning of" --tokens 100 --temp 0.7
+rm -f db/llm_evolution.duckdb db/llm_evolution.duckdb.wal
+rm -f model/checkpoints/*.pt
 ```
 
-## Project Structure
+## Testing
 
+```bash
+# Fast unit tests (all tracks)
+pytest -m "not slow"
+
+# Integration smoke test (takes minutes — requires no other server on :8765)
+pytest -m slow tests/test_integration.py
+
+# E2E Playwright test (requires dev server running)
+bash scripts/dev.sh &
+sleep 10
+cd frontend && npx playwright test
 ```
-├── data/           Corpus acquisition and cleaning
-├── tokenizer/      BPE tokenizer (train + encode/decode)
-├── model/          N-gram counts, smoothing, language model
-├── generate/       Text generation CLI
-├── eval/           Perplexity evaluation and ablation experiments
-└── tests/          pytest test suite
-```
 
-## Known Limitations (by design)
+## Further reading
 
-- No long-range coherence (3-token context window)
-- No semantic understanding (pure statistical pattern matching)
-- Memory-heavy n-gram tables (exponential growth with context length)
-- Gutenberg corpus may produce Victorian-sounding output
+- `SPEC.md` — full architecture and data-model spec
+- `specs/` — per-track implementation notes for each of the 8 build tracks
