@@ -1,0 +1,31 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# DuckDB runtime artifact
+db/llm_evolution.duckdb
+db/llm_evolution.duckdb.wal
+
+# Neural net checkpoints
+model/checkpoints/*.pt
+
+# Tokenizer artifacts
+tokenizer/merges.json
+tokenizer/vocab.json
+
+# Node
+node_modules/
+frontend/dist/
+
+# Windows Zone.Identifier files
+*:Zone.Identifier
+~$*
