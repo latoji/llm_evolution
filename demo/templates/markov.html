@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Revamped Markov Chain Visualizer: entropy badge, rainbow walkers,
+     bigram transition matrix heatmap, walker convergence chart -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markov Chain Visualizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 14px;
+      padding: 2rem 2.2rem;
+      width: 100%;
+      max-width: 1060px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    /* ── Header ── */
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.3rem;
+    }
+    h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #a78bfa;
+      letter-spacing: -0.01em;
+    }
+    .nav-link {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #818cf8;
+      text-decoration: none;
+      padding: 0.35rem 0.8rem;
+      border: 1px solid #2d3148;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .nav-link:hover { border-color: #7c3aed; color: #a78bfa; }
+
+    .subtitle {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-bottom: 0.5rem;
+    }
+    .intro {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+    }
+    label .hint {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+      color: #64748b;
+      font-size: 0.72rem;
+    }
+
+    /* ── Input row ── */
+    .input-row {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-end;
+      margin-bottom: 1.2rem;
+    }
+    .input-row .control-group { flex: 1; }
+    input[type="text"] {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 1.3rem;
+      font-family: 'Fira Mono', monospace;
+      padding: 0.65rem 0.85rem;
+      outline: none;
+      transition: border-color 0.15s;
+      letter-spacing: 0.05em;
+    }
+    input[type="text"]:focus { border-color: #7c3aed; }
+
+    /* ── Hero stats row ── */
+    .stats-row {
+      display: flex;
+      align-items: stretch;
+      gap: 1rem;
+      margin-bottom: 1.4rem;
+      flex-wrap: wrap;
+    }
+    .best-card {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 0.85rem 1.1rem;
+      flex: 0 0 auto;
+    }
+    .best-char {
+      font-size: 2.8rem;
+      font-weight: 800;
+      font-family: 'Fira Mono', monospace;
+      color: #a78bfa;
+      background: #0f1117;
+      border: 2px solid #7c3aed;
+      border-radius: 10px;
+      width: 66px;
+      height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 18px rgba(124,58,237,0.35);
+    }
+    .best-meta { display: flex; flex-direction: column; gap: 0.3rem; }
+    .best-label { font-size: 0.72rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; }
+    .order-badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 700;
+      background: #7c3aed22; border: 1px solid #7c3aed; border-radius: 20px;
+      padding: 0.15rem 0.6rem; color: #a78bfa;
+    }
+
+    /* Entropy card */
+    .entropy-card {
+      display: flex; flex-direction: column; justify-content: center; gap: 0.4rem;
+      background: #0f1117; border: 1px solid #2d3148; border-radius: 10px;
+      padding: 0.85rem 1.1rem; flex: 1; min-width: 160px;
+    }
+    .entropy-label { font-size: 0.72rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; }
+    .entropy-value { font-size: 1.6rem; font-weight: 800; font-family: 'Fira Mono', monospace; color: #38bdf8; line-height: 1; }
+    .entropy-bar-track { height: 6px; background: #1e2235; border-radius: 3px; overflow: hidden; }
+    .entropy-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease-out, background 0.4s; }
+    .entropy-caption { font-size: 0.68rem; color: #64748b; }
+
+    /* Corpus card */
+    .corpus-card {
+      display: flex; flex-direction: column; justify-content: center; gap: 0.35rem;
+      background: #0f1117; border: 1px solid #2d3148; border-radius: 10px;
+      padding: 0.85rem 1.1rem; flex: 0 0 auto;
+    }
+    .corpus-label { font-size: 0.72rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; }
+    .corpus-sources { display: flex; flex-direction: column; gap: 0.2rem; }
+    .corpus-source { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; font-weight: 600; color: #94a3b8; }
+    .corpus-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Two-panel layout ── */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 1.3rem;
+    }
+    .panel {
+      background: #0f1117; border: 1px solid #2d3148; border-radius: 10px;
+      padding: 1rem; overflow: hidden;
+    }
+    .panel-title {
+      font-size: 0.78rem; font-weight: 700; color: #a78bfa;
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.8rem;
+    }
+
+    /* ── Bar chart ── */
+    .bar-list { list-style: none; display: flex; flex-direction: column; gap: 3px; max-height: 340px; overflow-y: auto; }
+    .bar-item { display: flex; align-items: center; gap: 0.5rem; height: 22px; }
+    .bar-char { font-family: 'Fira Mono', monospace; font-size: 0.8rem; font-weight: 700; color: #cbd5e1; width: 24px; text-align: center; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 16px; background: #1a1d27; border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease-out, background 0.4s; min-width: 2px; }
+    .bar-pct { font-family: 'Fira Mono', monospace; font-size: 0.68rem; font-weight: 600; color: #64748b; width: 40px; text-align: right; flex-shrink: 0; }
+
+    /* ── Transition matrix ── */
+    .matrix-wrap { overflow-x: auto; overflow-y: auto; max-height: 340px; }
+    .matrix-table { border-collapse: separate; border-spacing: 2px; font-family: 'Fira Mono', monospace; font-size: 0.62rem; }
+    .matrix-corner { width: 22px; height: 22px; }
+    .matrix-col-header { text-align: center; font-weight: 700; color: #64748b; height: 22px; width: 28px; padding: 0 2px; }
+    .matrix-row-header { text-align: center; font-weight: 700; color: #94a3b8; width: 22px; height: 26px; padding-right: 4px; transition: color 0.2s; }
+    .matrix-row-header.active { color: #a78bfa; }
+    .matrix-cell {
+      width: 28px; height: 26px; border-radius: 4px; cursor: default;
+      position: relative; transition: background 0.35s, box-shadow 0.2s;
+    }
+    .matrix-cell:hover::after {
+      content: attr(data-prob);
+      position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+      background: #1e2235; border: 1px solid #4f46e5; border-radius: 4px;
+      padding: 2px 5px; white-space: nowrap; font-size: 0.62rem; color: #e2e8f0;
+      pointer-events: none; z-index: 10;
+    }
+    .matrix-row.active-row .matrix-row-header { color: #a78bfa; }
+    .matrix-row.active-row .matrix-cell { box-shadow: 0 0 0 1px #7c3aed55; }
+    .matrix-legend { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.6rem; font-size: 0.65rem; color: #4a5568; }
+    .legend-gradient { width: 80px; height: 8px; border-radius: 4px; background: linear-gradient(to right, #1a1d27, #6d28d9, #a78bfa); flex-shrink: 0; }
+
+    /* ── Walkers panel ── */
+    .walkers-panel {
+      background: #0f1117; border: 1px solid #2d3148; border-radius: 10px;
+      padding: 1rem; margin-bottom: 1rem;
+    }
+    .walkers-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem; }
+    .walkers-area { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+    .walker-row { display: flex; align-items: center; height: 20px; font-family: 'Fira Mono', monospace; font-size: 0.75rem; }
+    .walker-idx { color: #4a5568; font-size: 0.62rem; width: 22px; text-align: right; margin-right: 4px; flex-shrink: 0; }
+    .walker-char { display: inline-block; width: 10px; text-align: center; transition: color 0.12s, text-shadow 0.12s; }
+
+    /* ── Convergence chart ── */
+    .convergence-panel { background: #0f1117; border: 1px solid #2d3148; border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1rem; }
+    .convergence-title { font-size: 0.75rem; font-weight: 700; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.6rem; }
+    .conv-bars { display: flex; flex-direction: column; gap: 3px; }
+    .conv-item { display: flex; align-items: center; gap: 0.5rem; height: 18px; }
+    .conv-char { font-family: 'Fira Mono', monospace; font-size: 0.75rem; font-weight: 700; color: #94a3b8; width: 20px; text-align: center; }
+    .conv-track { flex: 1; height: 12px; background: #1a1d27; border-radius: 3px; overflow: hidden; }
+    .conv-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease-out; }
+    .conv-label { font-family: 'Fira Mono', monospace; font-size: 0.65rem; color: #64748b; width: 80px; text-align: right; }
+
+    /* ── Controls row ── */
+    .controls-row {
+      display: flex; gap: 0.8rem; margin-bottom: 1.3rem; align-items: center; flex-wrap: wrap;
+    }
+    .ctrl-btn { padding: 0.4rem 1rem; background: #1e2235; border: 1px solid #2d3148; border-radius: 8px; color: #94a3b8; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .ctrl-btn:hover { border-color: #7c3aed; color: #a78bfa; }
+    .ctrl-btn.active { background: #7c3aed22; border-color: #7c3aed; color: #a78bfa; }
+    .speed-label { font-size: 0.72rem; color: #64748b; }
+
+    /* ── How it works ── */
+    .how-compact { margin-top: 0.8rem; padding-top: 1.2rem; border-top: 1px solid #2d3148; }
+    .how-compact h2 { font-size: 0.82rem; font-weight: 700; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.6rem; }
+    .how-compact p { font-size: 0.78rem; color: #64748b; line-height: 1.6; }
+    .how-compact p + p { margin-top: 0.5rem; }
+    .how-compact code { font-family: 'Fira Mono', monospace; font-size: 0.73rem; color: #818cf8; background: #1e2235; border-radius: 3px; padding: 0 3px; }
+    .how-compact strong { color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- ── Header ── -->
+  <div class="header-row">
+    <h1>Markov Chain Visualizer</h1>
+    <a href="/" class="nav-link">&larr; Text Predictor</a>
+  </div>
+  <p class="subtitle">Watch a character-level Markov chain predict the next letter in real time</p>
+  <p class="intro">Type 1&ndash;4 characters below. The model scans the training corpus (Gutenberg classics + Wikipedia articles), finds matching patterns, and turns raw counts into a probability distribution. The <strong>transition matrix</strong> shows how likely each character is to follow any other. The <strong>Monte Carlo walkers</strong> each independently sample that distribution at every step, generating diverging continuations.</p>
+
+  <!-- ── Input ── -->
+  <label for="prefix">Type characters <span class="hint">(updates live as you type)</span></label>
+  <div class="input-row">
+    <div class="control-group">
+      <input type="text" id="prefix" maxlength="8" placeholder="th" value="th" autocomplete="off" spellcheck="false" />
+    </div>
+  </div>
+
+  <!-- ── Stats row: best char + entropy + corpus ── -->
+  <div class="stats-row">
+    <div class="best-card">
+      <div class="best-char" id="best-char">&hellip;</div>
+      <div class="best-meta">
+        <span class="best-label">Most likely next</span>
+        <span class="order-badge" id="order-badge">order &hellip;</span>
+      </div>
+    </div>
+    <div class="entropy-card">
+      <span class="entropy-label">Prediction uncertainty <span style="font-weight:400;text-transform:none;letter-spacing:normal;font-size:0.68rem;color:#4a5568;">(Shannon entropy)</span></span>
+      <span class="entropy-value" id="entropy-value">&mdash;</span>
+      <div class="entropy-bar-track"><div class="entropy-bar-fill" id="entropy-bar" style="width:0%;background:#38bdf8;"></div></div>
+      <span class="entropy-caption" id="entropy-caption">Low = confident &nbsp;|&nbsp; High = many options</span>
+    </div>
+    <div class="corpus-card">
+      <span class="corpus-label">Trained on</span>
+      <div class="corpus-sources">
+        <span class="corpus-source"><span class="corpus-dot" style="background:#a78bfa;"></span>Gutenberg classics</span>
+        <span class="corpus-source"><span class="corpus-dot" style="background:#38bdf8;"></span>Wikipedia articles</span>
+        <span class="corpus-source"><span class="corpus-dot" style="background:#4ade80;"></span>Seed text</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Distribution + Transition matrix ── -->
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-title">Probability Distribution</div>
+      <ul class="bar-list" id="bar-list"></ul>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Bigram Transition Matrix
+        <span style="font-weight:400;color:#4a5568;font-size:0.65rem;text-transform:none;letter-spacing:normal;margin-left:0.4rem;">row&nbsp;→&nbsp;source &nbsp;col&nbsp;→&nbsp;next</span>
+      </div>
+      <div class="matrix-wrap"><table class="matrix-table" id="matrix-table"><tbody></tbody></table></div>
+      <div class="matrix-legend">
+        <div class="legend-gradient"></div>
+        <span>low prob</span><span style="margin-left:auto;">high prob</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Walkers (full width) ── -->
+  <div class="walkers-panel">
+    <div class="walkers-header">
+      <div class="panel-title" style="margin-bottom:0;">
+        Monte Carlo Walkers
+        <span id="walker-status" style="font-weight:400;color:#64748b;text-transform:none;letter-spacing:normal;font-size:0.72rem;"></span>
+      </div>
+    </div>
+    <div class="walkers-area" id="walkers-area"></div>
+  </div>
+
+  <!-- ── Convergence chart ── -->
+  <div class="convergence-panel" id="convergence-panel" style="display:none;">
+    <div class="convergence-title">Walker Convergence &mdash; first-step consensus</div>
+    <div class="conv-bars" id="conv-bars"></div>
+  </div>
+
+  <!-- ── Controls ── -->
+  <div class="controls-row">
+    <button class="ctrl-btn active" id="btn-play" onclick="toggleWalkers()">&#9654; Play walkers</button>
+    <button class="ctrl-btn" onclick="resetWalkers()">&#8634; Reset</button>
+    <span class="speed-label">Speed:</span>
+    <button class="ctrl-btn" data-speed="220" onclick="setSpeed(this, 220)">Slow</button>
+    <button class="ctrl-btn active" data-speed="80" onclick="setSpeed(this, 80)">Normal</button>
+    <button class="ctrl-btn" data-speed="28" onclick="setSpeed(this, 28)">Fast</button>
+  </div>
+
+  <!-- ── How it works ── -->
+  <div class="how-compact">
+    <h2>How this works</h2>
+    <p>This page uses a <strong>character-level n-gram model</strong> (orders&nbsp;1&ndash;4) built from two balanced sources:
+    <strong>~150 Project Gutenberg books</strong> (classic literature and philosophy) and
+    <strong>~200 Wikipedia articles</strong> (science, history, geography, arts, and more).
+    Having both sources gives the model a richer vocabulary &mdash; literary prose from Gutenberg, factual and scientific writing from Wikipedia.</p>
+    <p>For your input <code>th</code>, the model finds every matching pattern, counts what followed, and turns the counts into probabilities.
+    If the exact context isn&rsquo;t found it <strong>backs off</strong> to shorter contexts.
+    The <strong>Bigram Transition Matrix</strong> shows how the top characters connect: each row is a source character and each cell&rsquo;s brightness is the probability that the column character follows.
+    The <strong>entropy</strong> badge measures how spread out the distribution is &mdash; near zero means very sure, near 4&ndash;5&nbsp;bits means many options are equally likely.
+    Each <strong>Monte Carlo walker</strong> independently rolls the weighted die at every step, producing a different path. The <strong>convergence chart</strong> (shown when walkers finish) tallies which first character most walkers chose.</p>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let currentDist = {};
+let currentMatrix = {};
+let currentTopChars = [];
+let activeChar = '';
+let walks = [];
+let walkerStep = 0;
+let walkerInterval = null;
+let walkerSpeed = 80;
+let isPlaying = true;
+let debounceTimer = null;
+
+const ORDER_NAMES = {0: 'uniform fallback', 1: 'unigram', 2: 'bigram', 3: 'trigram', 4: '4-gram'};
+const N_WALKERS = 20;
+
+// ── Per-walker rainbow colors ──
+function walkerHue(i) { return (i * 360 / N_WALKERS) % 360; }
+function walkerColorFull(i) { return `hsl(${walkerHue(i)}, 80%, 65%)`; }
+function walkerColorFaded(i) { return `hsl(${walkerHue(i)}, 30%, 28%)`; }
+
+// ── Color helpers ──
+function barColor(prob) {
+  const t = Math.min(prob * 4, 1);
+  const r = Math.round(79 + t * 88);
+  const g = Math.round(58 + t * (139 - 58) * (1 - t));
+  return `rgb(${r}, ${g}, 237)`;
+}
+
+function matrixColor(prob) {
+  if (!prob || prob < 0.001) return 'transparent';
+  const t = Math.min(prob * 3.5, 1);
+  const r = Math.round(30 + t * 137);
+  const g = Math.round(20 + t * 79 * (1 - t * 0.6));
+  const b = Math.round(60 + t * 190);
+  const a = (0.15 + t * 0.85).toFixed(2);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function displayChar(ch) {
+  if (ch === ' ') return '\u2423';  // ␣
+  if (ch === '\n') return '\u21b5'; // ↵
+  if (ch === '\t') return '\u2192'; // →
+  return ch;
+}
+
+// ── Entropy rendering ──
+function renderEntropy(entropy) {
+  const maxEnt = 4.7;
+  const frac = Math.min(entropy / maxEnt, 1);
+  const pct = (frac * 100).toFixed(0);
+  document.getElementById('entropy-value').textContent = entropy.toFixed(2) + ' bits';
+  const bar = document.getElementById('entropy-bar');
+  bar.style.width = pct + '%';
+  if (frac < 0.35) {
+    bar.style.background = 'hsl(160, 70%, 50%)';
+  } else if (frac < 0.65) {
+    const h = Math.round(160 - (frac - 0.35) / 0.3 * 160);
+    bar.style.background = `hsl(${h}, 70%, 50%)`;
+  } else {
+    const h = Math.round((1 - frac) * 40);
+    bar.style.background = `hsl(${h}, 80%, 55%)`;
+  }
+  const caption = frac < 0.30 ? `Very confident \u2014 ${pct}% of max entropy`
+    : frac < 0.55 ? `Moderate uncertainty \u2014 ${pct}% of max entropy`
+    : `High uncertainty \u2014 ${pct}% of max entropy`;
+  document.getElementById('entropy-caption').textContent = caption;
+}
+
+// ── Fetch prediction ──
+async function fetchPrediction(prefix) {
+  if (!prefix) {
+    document.getElementById('best-char').textContent = '\u2026';
+    document.getElementById('order-badge').textContent = 'type something';
+    document.getElementById('bar-list').innerHTML =
+      '<li style="color:#4a5568;font-size:0.8rem;padding:1rem;">Type at least 1 character\u2026</li>';
+    document.getElementById('matrix-table').querySelector('tbody').innerHTML = '';
+    document.getElementById('walkers-area').innerHTML = '';
+    document.getElementById('entropy-value').textContent = '\u2014';
+    document.getElementById('entropy-bar').style.width = '0%';
+    document.getElementById('convergence-panel').style.display = 'none';
+    return;
+  }
+  try {
+    const resp = await fetch('/char_predict', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({prefix, n_walkers: N_WALKERS, walk_length: 40}),
+    });
+    const data = await resp.json();
+
+    currentDist    = data.distribution   || {};
+    currentMatrix  = data.bigram_matrix  || {};
+    currentTopChars = data.top_chars     || [];
+    activeChar     = data.active_char    || '';
+    walks          = data.walks          || [];
+    walkerStep     = 0;
+
+    // Best char + order
+    document.getElementById('best-char').textContent = displayChar(data.best_char || '?');
+    document.getElementById('order-badge').textContent =
+      (ORDER_NAMES[data.order_used] || `order ${data.order_used}`) + ` (n=${data.order_used})`;
+
+    renderEntropy(data.entropy || 0);
+    renderBars(currentDist);
+    renderMatrix(currentMatrix, currentTopChars, activeChar);
+
+    renderWalkerRows(prefix);
+    document.getElementById('walker-status').textContent = '';
+    document.getElementById('convergence-panel').style.display = 'none';
+    if (isPlaying) startWalkers();
+  } catch (e) {
+    console.error('char_predict error', e);
+  }
+}
+
+// ── Bar chart ──
+function renderBars(dist) {
+  const list = document.getElementById('bar-list');
+  const entries = Object.entries(dist);
+  const maxProb = entries.length ? entries[0][1] : 1;
+  list.innerHTML = entries.map(([ch, prob]) => {
+    const widthPct = (prob / maxProb * 100).toFixed(1);
+    const pct = (prob * 100).toFixed(1);
+    return `<li class="bar-item">
+      <span class="bar-char">${displayChar(ch)}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${widthPct}%;background:${barColor(prob)}"></span></span>
+      <span class="bar-pct">${pct}%</span>
+    </li>`;
+  }).join('');
+}
+
+// ── Transition matrix ──
+function renderMatrix(matrix, topChars, active) {
+  const tbody = document.getElementById('matrix-table').querySelector('tbody');
+  if (!topChars.length) { tbody.innerHTML = ''; return; }
+
+  let html = '<tr><td class="matrix-corner"></td>';
+  topChars.forEach(ch => {
+    html += `<th class="matrix-col-header">${displayChar(ch)}</th>`;
+  });
+  html += '</tr>';
+
+  topChars.forEach(src => {
+    const isActive = (src === active);
+    html += `<tr class="matrix-row${isActive ? ' active-row' : ''}">`;
+    html += `<th class="matrix-row-header${isActive ? ' active' : ''}">${displayChar(src)}</th>`;
+    const row = matrix[src] || {};
+    topChars.forEach(dst => {
+      const prob = row[dst] || 0;
+      const pctStr = prob > 0 ? (prob * 100).toFixed(1) + '%' : '';
+      const tip = `${displayChar(src)}\u2192${displayChar(dst)}: ${pctStr || '<0.1%'}`;
+      html += `<td class="matrix-cell" style="background:${matrixColor(prob)}" data-prob="${pctStr}" title="${tip}"></td>`;
+    });
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+// ── Colorful walker rows ──
+function renderWalkerRows(prefix) {
+  const area = document.getElementById('walkers-area');
+  const safePrefix = prefix.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  area.innerHTML = walks.map((_, i) => {
+    const dimColor = walkerColorFaded(i) + '88';
+    return `<div class="walker-row">
+      <span class="walker-idx">${i + 1}</span>
+      <span style="color:${dimColor};font-family:'Fira Mono',monospace;font-size:0.75rem;">${safePrefix.split('').map(c => displayChar(c)).join('')}</span>
+      <span class="walker-path" id="wp-${i}"></span>
+    </div>`;
+  }).join('');
+}
+
+function advanceWalkers() {
+  const maxLen = walks[0]?.length || 0;
+  if (walkerStep >= maxLen) {
+    stopWalkers();
+    document.getElementById('walker-status').textContent = '\u2014 complete';
+    renderConvergence(walks);
+    return;
+  }
+  walks.forEach((walk, i) => {
+    const pathEl = document.getElementById(`wp-${i}`);
+    if (!pathEl) return;
+    // Fade previous highlights
+    pathEl.querySelectorAll('.walker-char.new').forEach(el => {
+      el.classList.remove('new');
+      el.style.color = walkerColorFaded(i);
+      el.style.textShadow = '';
+    });
+    // Append new char with glow
+    const ch = walk[walkerStep];
+    const full = walkerColorFull(i);
+    const span = document.createElement('span');
+    span.className = 'walker-char new';
+    span.textContent = displayChar(ch);
+    span.style.color = full;
+    span.style.textShadow = `0 0 8px ${full}`;
+    pathEl.appendChild(span);
+  });
+  walkerStep++;
+  document.getElementById('walker-status').textContent = `\u2014 step ${walkerStep}`;
+}
+
+// ── Convergence chart ──
+function renderConvergence(walks) {
+  const firstChars = {};
+  walks.forEach(walk => {
+    if (!walk.length) return;
+    const ch = walk[0];
+    firstChars[ch] = (firstChars[ch] || 0) + 1;
+  });
+  const total = walks.length;
+  const sorted = Object.entries(firstChars).sort((a,b) => b[1]-a[1]).slice(0,10);
+  if (!sorted.length) return;
+
+  const panel = document.getElementById('convergence-panel');
+  const barsEl = document.getElementById('conv-bars');
+  panel.style.display = 'block';
+  const maxCount = sorted[0][1];
+  barsEl.innerHTML = sorted.map(([ch, count], idx) => {
+    const pct = (count / total * 100).toFixed(0);
+    const widthPct = (count / maxCount * 100).toFixed(1);
+    const color = `hsl(${idx * 36 % 360}, 70%, 60%)`;
+    return `<div class="conv-item">
+      <span class="conv-char">${displayChar(ch)}</span>
+      <span class="conv-track"><span class="conv-fill" style="width:${widthPct}%;background:${color};"></span></span>
+      <span class="conv-label">${count}/${total} (${pct}%)</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Walker control ──
+function startWalkers() {
+  stopWalkers();
+  walkerInterval = setInterval(advanceWalkers, walkerSpeed);
+}
+function stopWalkers() {
+  if (walkerInterval) { clearInterval(walkerInterval); walkerInterval = null; }
+}
+function toggleWalkers() {
+  const btn = document.getElementById('btn-play');
+  if (isPlaying) {
+    stopWalkers(); isPlaying = false;
+    btn.innerHTML = '&#9654; Play walkers'; btn.classList.remove('active');
+  } else {
+    isPlaying = true; btn.innerHTML = '&#9646;&#9646; Pause'; btn.classList.add('active');
+    if (walkerStep < (walks[0]?.length || 0)) startWalkers();
+  }
+}
+function resetWalkers() {
+  stopWalkers(); walkerStep = 0;
+  const prefix = document.getElementById('prefix').value;
+  renderWalkerRows(prefix);
+  document.getElementById('walker-status').textContent = '';
+  document.getElementById('convergence-panel').style.display = 'none';
+  if (isPlaying) startWalkers();
+}
+function setSpeed(btn, ms) {
+  walkerSpeed = ms;
+  document.querySelectorAll('.controls-row .ctrl-btn[data-speed]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (isPlaying && walkerInterval) { stopWalkers(); startWalkers(); }
+}
+
+// ── Live input ──
+document.getElementById('prefix').addEventListener('input', e => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => { stopWalkers(); fetchPrediction(e.target.value); }, 150);
+});
+
+// ── Initial load ──
+fetchPrediction(document.getElementById('prefix').value);
+</script>
+</body>
+</html>

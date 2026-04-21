@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text Predictor Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 14px;
+      padding: 2rem 2.2rem;
+      width: 100%;
+      max-width: 780px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #a78bfa;
+      margin-bottom: 0.3rem;
+      letter-spacing: -0.01em;
+    }
+
+    .subtitle {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-bottom: 0.6rem;
+    }
+
+    .intro {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 1.8rem;
+    }
+
+    label .hint {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+      color: #64748b;
+      font-size: 0.72rem;
+    }
+
+    label .tech {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+      color: #818cf8;
+      font-size: 0.70rem;
+      font-family: 'Fira Mono', monospace;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+    }
+
+    textarea, input[type="text"], input[type="number"] {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      padding: 0.65rem 0.85rem;
+      outline: none;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+
+    textarea:focus, input:focus {
+      border-color: #7c3aed;
+    }
+
+    textarea { resize: vertical; min-height: 80px; }
+
+    /* ── Prompt row with Surprise Me ── */
+    .prompt-row {
+      display: flex;
+      gap: 0.6rem;
+      align-items: flex-end;
+      margin-bottom: 0.1rem;
+    }
+    .prompt-row textarea { flex: 1; }
+    .surprise-btn {
+      flex-shrink: 0;
+      width: auto;
+      padding: 0.65rem 1rem;
+      background: #1e2235;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #a78bfa;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+      margin-top: 0;
+    }
+    .surprise-btn:hover { background: #252a3e; border-color: #7c3aed; }
+
+    /* ── Preset buttons ── */
+    .presets {
+      display: flex;
+      gap: 0.5rem;
+      margin: 1rem 0 0.3rem;
+      flex-wrap: wrap;
+    }
+    .presets label.section-label {
+      font-size: 0.72rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      width: 100%;
+      margin-bottom: 0;
+    }
+    .preset-btn {
+      padding: 0.35rem 0.85rem;
+      background: #1e2235;
+      border: 1px solid #2d3148;
+      border-radius: 20px;
+      color: #94a3b8;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      width: auto;
+      margin-top: 0;
+    }
+    .preset-btn:hover { border-color: #7c3aed; color: #a78bfa; }
+    .preset-btn.active { background: #7c3aed22; border-color: #7c3aed; color: #a78bfa; }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      margin: 1.1rem 0;
+    }
+
+    .control-group { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: #7c3aed;
+      cursor: pointer;
+    }
+
+    .val-badge {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #a78bfa;
+      min-width: 2.8rem;
+      text-align: right;
+    }
+
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      margin-top: 0.3rem;
+    }
+
+    button:hover:not(:disabled) { opacity: 0.92; }
+    button:active:not(:disabled) { transform: scale(0.98); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .output-wrap {
+      margin-top: 1.4rem;
+    }
+
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.4rem;
+    }
+
+    .output-header label { margin-bottom: 0; }
+
+    .output-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .token-counter {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+      font-family: 'Fira Mono', monospace;
+    }
+    .token-counter.active { color: #a78bfa; }
+
+    .copy-btn {
+      width: auto;
+      padding: 0.25rem 0.7rem;
+      background: #1e2235;
+      border: 1px solid #2d3148;
+      border-radius: 6px;
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-top: 0;
+    }
+    .copy-btn:hover { border-color: #7c3aed; color: #a78bfa; }
+    .copy-btn.copied { background: #16a34a22; border-color: #16a34a; color: #4ade80; }
+
+    #output {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      font-size: 0.95rem;
+      line-height: 1.65;
+      min-height: 90px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    #output .prompt-part { color: #60a5fa; }
+    #output .gen-part    { color: #e2e8f0; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid #ffffff44;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .cursor-blink {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: #a78bfa;
+      animation: blink 0.8s step-end infinite;
+      vertical-align: text-bottom;
+      margin-left: 1px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .error { color: #f87171; font-size: 0.87rem; margin-top: 0.6rem; }
+
+    .info-bar {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #2d3148;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: #1e2235;
+      border: 1px solid #2d3148;
+      border-radius: 20px;
+      padding: 0.2rem 0.65rem;
+      color: #94a3b8;
+    }
+
+    .badge span { color: #a78bfa; }
+
+    /* ── How it works ── */
+    .how {
+      margin-top: 1.6rem;
+      padding-top: 1.4rem;
+      border-top: 1px solid #2d3148;
+    }
+
+    .how h2 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #a78bfa;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 1rem;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .step {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 24px; height: 24px;
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      border-radius: 50%;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .step-body strong {
+      display: block;
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      margin-bottom: 0.2rem;
+    }
+
+    .step-body p {
+      font-size: 0.77rem;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    .step-body code {
+      font-family: 'Fira Mono', monospace;
+      font-size: 0.75rem;
+      color: #818cf8;
+      background: #1e2235;
+      border-radius: 3px;
+      padding: 0 3px;
+    }
+
+    .limitation {
+      margin-top: 0.9rem;
+      background: #1a1020;
+      border: 1px solid #3b2060;
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      font-size: 0.78rem;
+      color: #94a3b8;
+      line-height: 1.55;
+    }
+
+    .limitation strong { color: #c084fc; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Text Predictor</h1>
+  <p class="subtitle">Type a few words and this app will try to continue your sentence &mdash; like a smart autocomplete</p>
+  <p class="intro">This app learned common word patterns from classic books and other texts. When you type a prompt, it looks at the last few words and guesses what comes next &mdash; one word at a time, just like the autocomplete on your phone.</p>
+
+  <label for="prompt">Start your sentence here</label>
+  <div class="prompt-row">
+    <textarea id="prompt" rows="2" placeholder="The meaning of">The meaning of</textarea>
+    <button type="button" class="surprise-btn" onclick="surpriseMe()" title="Pick a random prompt">&#127922; Surprise Me</button>
+  </div>
+
+  <!-- ── Presets ── -->
+  <div class="presets">
+    <label class="section-label">Style presets</label>
+    <button type="button" class="preset-btn" data-temp="0.4" data-topk="20" data-topp="0.7" onclick="applyPreset(this)">&#129504; Conservative</button>
+    <button type="button" class="preset-btn active" data-temp="0.7" data-topk="50" data-topp="0.9" onclick="applyPreset(this)">&#9878;&#65039; Balanced</button>
+    <button type="button" class="preset-btn" data-temp="1.2" data-topk="100" data-topp="0.95" onclick="applyPreset(this)">&#127912; Creative</button>
+    <button type="button" class="preset-btn" data-temp="1.8" data-topk="200" data-topp="1.0" onclick="applyPreset(this)">&#127776; Chaotic</button>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>Creativity <span class="tech">Temperature</span><br><span class="hint">low = predictable, high = wild</span></label>
+      <div class="slider-row">
+        <input type="range" id="temp" min="0.1" max="2.0" step="0.05" value="0.7"
+               oninput="document.getElementById('temp-val').textContent=parseFloat(this.value).toFixed(2); clearPresetHighlight()">
+        <span class="val-badge" id="temp-val">0.70</span>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Word choices <span class="tech">Top-k</span><br><span class="hint">how many options to pick from</span></label>
+      <div class="slider-row">
+        <input type="range" id="topk" min="1" max="200" step="1" value="50"
+               oninput="document.getElementById('topk-val').textContent=this.value; clearPresetHighlight()">
+        <span class="val-badge" id="topk-val">50</span>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Focus <span class="tech">Top-p / Nucleus</span><br><span class="hint">lower = only top words, higher = more variety</span></label>
+      <div class="slider-row">
+        <input type="range" id="topp" min="0.1" max="1.0" step="0.05" value="0.9"
+               oninput="document.getElementById('topp-val').textContent=parseFloat(this.value).toFixed(2); clearPresetHighlight()">
+        <span class="val-badge" id="topp-val">0.90</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="control-group">
+      <label>How many words to generate <span class="tech">max_tokens</span></label>
+      <input type="number" id="max-tokens" value="80" min="10" max="400" />
+    </div>
+    <div class="control-group">
+      <label>Seed <span class="hint">(same number = same result; blank = random)</span></label>
+      <input type="number" id="seed" placeholder="e.g. 42" />
+    </div>
+  </div>
+
+  <button id="gen-btn" onclick="generate()">Generate</button>
+
+  <div class="output-wrap">
+    <div class="output-header">
+      <label>Generated text</label>
+      <div class="output-meta">
+        <span class="token-counter" id="token-counter"></span>
+        <button type="button" class="copy-btn" id="copy-btn" onclick="copyOutput()" title="Copy to clipboard">&#128203; Copy</button>
+      </div>
+    </div>
+    <div id="output"><span style="color:#4a5568">Press Generate to see text&hellip;</span></div>
+    <div id="error-msg" class="error"></div>
+  </div>
+
+  <!-- ── How it works ── -->
+  <div class="how">
+    <h2>How it works</h2>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Break your text into pieces <code>BPE Tokenisation</code></strong>
+          <p>Your sentence is chopped into small pieces called <em>tokens</em> using <strong>Byte Pair Encoding (BPE)</strong> &mdash; the same method used by GPT-2. Think of it like breaking a sentence into Scrabble tiles. The app knows about <code id="vocab-step">~1200</code> different pieces.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Look at the last few words <code>N-gram context window</code></strong>
+          <p>The app reads the last <code id="context-step">4</code> pieces (the <strong>n-gram context</strong>) and checks: <em>&ldquo;In the training texts, what usually came after these pieces?&rdquo;</em> It counts how often each possible next piece appeared in that position.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Handle unseen patterns <code>Kneser-Ney back-off smoothing</code></strong>
+          <p>If the app has never seen your exact combination, it doesn&rsquo;t give up. Using <strong>Modified Kneser-Ney smoothing</strong>, it backs off to shorter patterns (3 words, then 2, then 1) until it finds something it recognises. Every word gets at least a small chance.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Pick the next word <code>Temperature + Top-k + Nucleus sampling</code></strong>
+          <p>The app scores all candidate words, then applies your <strong>Creativity</strong> (temperature scaling), <strong>Word choices</strong> (top-k), and <strong>Focus</strong> (nucleus / top-p) sliders to filter the list. One word is randomly drawn, added to the text, and the process repeats.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="limitation">
+      <strong>Good to know:</strong>&nbsp;
+      This app only looks at the last few words (the <em>context window</em>), so it can&rsquo;t keep track of a topic across a long paragraph. It doesn&rsquo;t actually <em>understand</em> language &mdash; it just knows which words tend to appear next to each other. Think of it as a much fancier version of your phone&rsquo;s autocomplete. These are exactly the limitations that modern neural networks (transformers) were invented to solve.
+    </div>
+  </div>
+
+  <div class="info-bar" id="info-bar">
+    <span class="badge">Looks back: <span id="info-context">&hellip; words</span></span>
+    <span class="badge">Vocabulary: <span id="info-vocab">&hellip; word pieces</span></span>
+<span class="badge">Trained on: <span>Gutenberg books + Wikipedia articles</span></span>
+    <a href="/markov" class="badge" style="color:#818cf8; text-decoration:none; cursor:pointer; border-color:#7c3aed44;">&#128270; Markov Chain Visualizer &rarr;</a>
+  </div>
+</div>
+
+<script>
+// ── Random prompts for Surprise Me ──
+const SURPRISE_PROMPTS = [
+  "It was a dark and stormy",
+  "The meaning of life is",
+  "Once upon a time there",
+  "In the beginning of the",
+  "She walked into the room",
+  "The old man sat by",
+  "Knowledge is the key to",
+  "Deep in the forest a",
+  "The stars above were shining",
+  "He could not believe that",
+  "Science has shown us that",
+  "Love is not something you",
+  "The river flows gently through",
+  "At the end of the",
+  "They say that wisdom comes",
+];
+
+function surpriseMe() {
+  const idx = Math.floor(Math.random() * SURPRISE_PROMPTS.length);
+  document.getElementById('prompt').value = SURPRISE_PROMPTS[idx];
+}
+
+// ── Presets ──
+function applyPreset(btn) {
+  const temp = parseFloat(btn.dataset.temp);
+  const topk = parseInt(btn.dataset.topk);
+  const topp = parseFloat(btn.dataset.topp);
+
+  document.getElementById('temp').value = temp;
+  document.getElementById('temp-val').textContent = temp.toFixed(2);
+  document.getElementById('topk').value = topk;
+  document.getElementById('topk-val').textContent = topk;
+  document.getElementById('topp').value = topp;
+  document.getElementById('topp-val').textContent = topp.toFixed(2);
+
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function clearPresetHighlight() {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ── Copy to clipboard ──
+function copyOutput() {
+  const text = document.getElementById('output').innerText;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.classList.add('copied');
+    btn.innerHTML = '&#10003; Copied';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '&#128203; Copy';
+    }, 1500);
+  });
+}
+
+// ── SSE Streaming generation ──
+let abortController = null;
+
+async function generate() {
+  const btn = document.getElementById('gen-btn');
+  const out = document.getElementById('output');
+  const errEl = document.getElementById('error-msg');
+  const counterEl = document.getElementById('token-counter');
+  const prompt = document.getElementById('prompt').value.trim() || 'The meaning of';
+
+  // Cancel any in-flight stream
+  if (abortController) abortController.abort();
+  abortController = new AbortController();
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Generating&hellip;';
+  errEl.textContent = '';
+  counterEl.textContent = '';
+  counterEl.classList.add('active');
+
+  const safePrompt = prompt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  out.innerHTML = `<span class="prompt-part">${safePrompt}</span><span class="gen-part" id="gen-stream"></span><span class="cursor-blink"></span>`;
+
+  const payload = {
+    prompt,
+    temperature: parseFloat(document.getElementById('temp').value),
+    top_k: parseInt(document.getElementById('topk').value),
+    top_p: parseFloat(document.getElementById('topp').value),
+    max_tokens: parseInt(document.getElementById('max-tokens').value),
+    seed: document.getElementById('seed').value || null,
+  };
+
+  let tokenCount = 0;
+
+  try {
+    const resp = await fetch('/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: abortController.signal,
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();  // keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = JSON.parse(line.slice(6));
+
+        if (data.error) {
+          errEl.textContent = '\u26a0 ' + data.error;
+          break;
+        }
+        if (data.done) break;
+        if (data.token !== undefined) {
+          const genSpan = document.getElementById('gen-stream');
+          const safe = data.token.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          genSpan.innerHTML += safe;
+          tokenCount++;
+          counterEl.textContent = `${tokenCount} token${tokenCount !== 1 ? 's' : ''}`;
+        }
+      }
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      errEl.textContent = '\u26a0 Network error: ' + err.message;
+    }
+  } finally {
+    // Remove blinking cursor
+    const cursor = out.querySelector('.cursor-blink');
+    if (cursor) cursor.remove();
+    btn.disabled = false;
+    btn.textContent = 'Generate';
+    counterEl.classList.remove('active');
+    abortController = null;
+  }
+}
+
+// Allow Ctrl+Enter / Cmd+Enter in prompt textarea
+document.getElementById('prompt').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') generate();
+});
+
+// ── Load model info on page load ──
+(async function loadInfo() {
+  try {
+    const resp = await fetch('/info');
+    const data = await resp.json();
+    const contextSize = Math.max(data.max_order - 1, 1);
+    document.getElementById('info-context').textContent = contextSize + ' words';
+    document.getElementById('info-vocab').textContent = data.vocab_size.toLocaleString() + ' word pieces';
+    // Also update the "How it works" step values
+    const vocabStep = document.getElementById('vocab-step');
+    const contextStep = document.getElementById('context-step');
+    if (vocabStep) vocabStep.textContent = '~' + data.vocab_size.toLocaleString();
+    if (contextStep) contextStep.textContent = contextSize;
+  } catch (e) {
+    // Silently ignore — static fallback values remain
+  }
+})();
+</script>
+</body>
+</html>
