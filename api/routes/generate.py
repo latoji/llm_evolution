@@ -49,8 +49,9 @@ def _run_all_models(word_count: int, auto_correct: bool) -> list[ModelOutput]:
     validator = Validator()
     outputs: list[ModelOutput] = []
 
+    cur_store = state.get_store()
     for spec in MODELS:
-        raw_text = _generate_one(spec, state.store, validator, word_count)
+        raw_text = _generate_one(spec, cur_store, validator, word_count)
 
         if raw_text and raw_text.strip():
             word_results_raw, pct = validator.validate(raw_text)

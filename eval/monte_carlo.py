@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import os
 import random
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -33,7 +33,7 @@ _WVM_WORDLIST: Path = (Path(__file__).parent.parent / "wvm" / "scowl_70.txt").re
 # Public constants
 # ---------------------------------------------------------------------------
 
-RUNS_PER_MODEL: int = 50
+RUNS_PER_MODEL: int = int(os.environ.get("MC_RUNS_PER_MODEL", "50"))
 WORDS_PER_RUN: int = 100
 
 _CHARS_PER_RUN: int = 600    # char models: ~100 words × 6 chars/word
@@ -270,14 +270,19 @@ class MonteCarloEvaluator:
 
         Returns:
             {model_name: mean_accuracy} for all 13 models.
+
+        Note: ThreadPoolExecutor is used (not ProcessPoolExecutor) so that the
+        worker threads share the calling process's DuckDB write lock.  DuckDB
+        supports multiple connections within a single process; cross-process
+        concurrent access is not permitted.
         """
         results: dict[str, float] = {}
         markov_specs = [s for s in MODELS if s.family != "neural"]
         neural_specs = [s for s in MODELS if s.family == "neural"]
 
-        # ---- Markov models: parallel across CPU cores ----
+        # ---- Markov models: parallel threads within the current process ----
         max_workers = max(1, (os.cpu_count() or 4) - 2)
-        with ProcessPoolExecutor(max_workers=max_workers) as pool:
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
             future_map = {
                 pool.submit(
                     _markov_worker_task,

@@ -26,11 +26,22 @@ class Store:
     Open one Store per process. Do not share connections across processes.
     """
 
-    def __init__(self, db_path: Path = DB_PATH) -> None:
-        """Open connection and create schema if absent."""
+    def __init__(self, db_path: Path = DB_PATH, read_only: bool = False) -> None:
+        """Open connection and create schema if absent.
+
+        Args:
+            db_path:   Path to the DuckDB file.
+            read_only: When True, opens a read-only connection so the worker
+                       subprocess can hold the single write lock without
+                       conflicting with the parent FastAPI process.
+        """
         db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn: duckdb.DuckDBPyConnection = duckdb.connect(str(db_path))
-        create_all(self._conn)
+        self._read_only = read_only
+        self._conn: duckdb.DuckDBPyConnection = duckdb.connect(
+            str(db_path), read_only=read_only
+        )
+        if not read_only:
+            create_all(self._conn)
 
     # ------------------------------------------------------------------
     # Transaction context manager

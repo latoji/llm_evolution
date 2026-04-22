@@ -28,7 +28,10 @@ async def accuracy() -> AccuracyHistoryResponse:
     model_name — the ``get_accuracy_history_all`` convenience method is not
     yet in Track 0's Store; this is the documented fallback.
     """
-    all_rows = state.store.get_accuracy_history()  # type: ignore[union-attr]
+    store = state.get_store()
+    if store is None:
+        return AccuracyHistoryResponse(models={})
+    all_rows = store.get_accuracy_history()
     grouped: dict[str, list[AccuracyPoint]] = {}
     for row in all_rows:
         point = AccuracyPoint(

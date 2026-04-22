@@ -50,6 +50,13 @@ async def upload(files: list[UploadFile] = File(...)) -> IngestUploadResponse:
         state.current_chunk = None
         state.total_chunks = None
 
+        # Close the parent's DuckDB connection before spawning the worker.
+        # DuckDB only allows one writer across processes; the worker must hold
+        # the exclusive lock.  get_store() will reopen it once the worker exits.
+        if state.store is not None:
+            state.store.close()
+            state.store = None
+
         state.worker_handle = start_worker(saved, db_path=state.db_path)
 
         # Create the relay task only when it is not already running.

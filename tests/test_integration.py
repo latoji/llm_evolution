@@ -7,6 +7,7 @@ Excluded from the default ``pytest -m 'not slow'`` suite.
 
 from __future__ import annotations
 
+import os
 import signal
 import subprocess
 import sys
@@ -15,6 +16,9 @@ from pathlib import Path
 
 import pytest
 import requests
+
+# Reduce MC runs so neural-model generation completes in reasonable time on CPU.
+_MC_RUNS: str = os.environ.get("MC_RUNS_PER_MODEL", "2")
 
 
 _BACKEND_URL = "http://localhost:8765"
@@ -52,6 +56,7 @@ def test_end_to_end() -> None:
         [sys.executable, "-m", "uvicorn", "api.main:app", "--port", "8765"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        env={**os.environ, "MC_RUNS_PER_MODEL": _MC_RUNS},
     )
     try:
         _wait_for_backend(_BACKEND_URL, _STARTUP_TIMEOUT_S)

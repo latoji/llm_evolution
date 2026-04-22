@@ -59,7 +59,10 @@ async def get_table(
     if actual is None:
         return {"rows": [], "total": 0}
 
-    conn = state.store._conn  # type: ignore[union-attr]
+    store = state.get_store()
+    if store is None:
+        return {"rows": [], "total": 0}
+    conn = store._conn
     total_row = conn.execute(f"SELECT COUNT(*) FROM {actual}").fetchone()
     total = int(total_row[0]) if total_row else 0
 
@@ -78,7 +81,10 @@ async def get_table(
 @router.get("/row_counts")
 async def row_counts() -> dict[str, int]:
     """Return the row count for every allowed table."""
-    conn = state.store._conn  # type: ignore[union-attr]
+    store = state.get_store()
+    if store is None:
+        return {name: 0 for name in ALLOWED_TABLES}
+    conn = store._conn
     counts: dict[str, int] = {}
     for viewer_name, actual in _TABLE_MAP.items():
         if actual is None:
@@ -103,7 +109,15 @@ async def reset_db() -> DBResetResponse:
         state.worker_handle.process.join(timeout=5)
         state.worker_handle = None
 
-    state.store.reset_all()  # type: ignore[union-attr]
+    # Close existing store (if open) and use a fresh connection for reset.
+    from db.store import Store
+    if state.store is not None:
+        state.store.close()
+        state.store = None
+    write_store = Store(state.db_path)
+    write_store.reset_all()
+    write_store.close()
+    state.store = Store(state.db_path)  # restore normal store
 
     # Reset all progress counters
     state.chunks_accepted = 0

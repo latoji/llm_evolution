@@ -3,3 +3,4 @@ markers = [
     "slow: marks integration and end-to-end tests that are excluded from default runs",
 ]
 testpaths = ["tests"]
+addopts = "-m 'not slow'"

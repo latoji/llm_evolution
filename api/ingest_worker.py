@@ -129,12 +129,14 @@ def _worker_main(
 
     # Looked up via the helpers module so tests can monkey-patch them.
     merges = ingest_helpers.load_bpe_merges()
-    trainers = (
-        ingest_helpers.build_trainers(store) if merges is not None else None
-    )
+    # Trainers are built whenever torch is available, independently of whether
+    # BPE merges exist.  The Markov MC evaluation must run regardless, and the
+    # neural trainers will simply generate untrained output (score 0.0) until
+    # BPE data is available and training steps have been performed.
+    trainers = ingest_helpers.build_trainers(store)
     evaluator = (
         ingest_helpers.build_evaluator(store, validator, trainers)
-        if trainers
+        if trainers is not None
         else None
     )
 
