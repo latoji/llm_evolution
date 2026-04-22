@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavBar } from "./components/NavBar";
 import { WSProvider } from "./context/WSContext";
-import { IngestPage, StatsPage, GeneratePage, DBPage } from "./pages";
+import { IngestPage, StatsPage, GeneratePage, DBPage, HelpPage } from "./pages";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +21,7 @@ export default function App() {
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/generate" element={<GeneratePage />} />
                 <Route path="/db" element={<DBPage />} />
+                <Route path="/help" element={<HelpPage />} />
               </Routes>
             </main>
           </div>

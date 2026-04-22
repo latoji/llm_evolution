@@ -27,7 +27,15 @@ CHUNK_MAX_CHARS: int = 2500
 MIN_REAL_WORD_PCT: float = 0.70
 
 # Tolerance used when comparing before/after accuracy snapshots.
-ACCURACY_EPSILON: float = 1e-6
+# Monte Carlo evaluation is stochastic; a threshold of 1e-6 causes excessive
+# rejections because sampling noise alone routinely produces tiny apparent drops.
+# 0.02 = 2 percentage-point drop required before a chunk is rolled back.
+ACCURACY_EPSILON: float = 0.02
+
+# Number of accepted chunks to treat as a warm-up period.  During warm-up the
+# models have too little data for MC accuracy estimates to be stable, so the
+# rollback guard is skipped entirely.
+WARMUP_CHUNKS: int = 5
 
 # WebSocket event types that originate in the worker.
 EVENT_CHUNK_START: str = "chunk_start"

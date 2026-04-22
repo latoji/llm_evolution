@@ -230,6 +230,8 @@ class TestRollback:
             trainers=fake_trainers,
             evaluator_results={k: 0.1 for k in baseline},  # catastrophic drop
         )
+        # Bypass warm-up so the rollback guard is active from chunk 0.
+        monkeypatch.setattr(ingest_worker, "WARMUP_CHUNKS", 0)
         # With merges=[] the BPE encoder still runs; neutralise by returning
         # an empty token list so the worker skips NN training and BPE counts.
         import tokenizer.bpe

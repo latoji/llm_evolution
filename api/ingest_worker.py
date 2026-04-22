@@ -48,6 +48,7 @@ from api.ingest_helpers import (
 from api.worker_types import (
     ACCURACY_EPSILON,
     PROGRESS_QUEUE_MAXSIZE,
+    WARMUP_CHUNKS,
     WorkerHandle,
     make_chunk_done,
     make_chunk_progress,
@@ -184,6 +185,7 @@ def _worker_main(
                     trainers=trainers,
                     evaluator=evaluator,
                     progress_queue=progress_queue,
+                    chunks_accepted=chunks_accepted,
                 )
                 if status == "accepted":
                     chunks_accepted += 1
@@ -228,8 +230,14 @@ def _process_chunk(
     trainers: dict[str, Any] | None,
     evaluator: Any,
     progress_queue: Any,
+    chunks_accepted: int = 0,
 ) -> tuple[str, str | None, dict[str, float]]:
-    """Process one chunk. Return (status, reason, per-model accuracy delta)."""
+    """Process one chunk. Return (status, reason, per-model accuracy delta).
+
+    Rollback is skipped during the warm-up period (``chunks_accepted <
+    WARMUP_CHUNKS``) because MC accuracy estimates are too noisy to trust
+    until enough data has been seen.
+    """
     accuracy_before: dict[str, float] = store.get_latest_accuracy()
 
     nn_snapshots: dict[str, dict] = {}
@@ -294,7 +302,7 @@ def _process_chunk(
         for name in accuracy_after
     }
 
-    if drops:
+    if drops and chunks_accepted >= WARMUP_CHUNKS:
         _rollback_chunk(
             store=store,
             chunk_id=chunk_id,

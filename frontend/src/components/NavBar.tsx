@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { to: "/stats", label: "Stats" },
   { to: "/generate", label: "Generate" },
   { to: "/db", label: "DB" },
+  { to: "/help", label: "Help" },
 ] as const;
 
 function linkClass({ isActive }: { isActive: boolean }): string {
