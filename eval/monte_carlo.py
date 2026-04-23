@@ -33,11 +33,11 @@ _WVM_WORDLIST: Path = (Path(__file__).parent.parent / "wvm" / "scowl_70.txt").re
 # Public constants
 # ---------------------------------------------------------------------------
 
-RUNS_PER_MODEL: int = int(os.environ.get("MC_RUNS_PER_MODEL", "50"))
-WORDS_PER_RUN: int = 100
+RUNS_PER_MODEL: int = int(os.environ.get("MC_RUNS_PER_MODEL", "10"))
+WORDS_PER_RUN: int = int(os.environ.get("MC_WORDS_PER_RUN", "50"))
 
-_CHARS_PER_RUN: int = 600    # char models: ~100 words × 6 chars/word
-_TOKENS_PER_RUN: int = 200   # bpe / neural: subword tokens → ~100 decoded words
+_CHARS_PER_RUN: int = 300    # char models: ~50 words × 6 chars/word
+_TOKENS_PER_RUN: int = 100   # bpe / neural: subword tokens → ~50 decoded words
 
 
 # ---------------------------------------------------------------------------

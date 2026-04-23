@@ -87,8 +87,8 @@ class FeedforwardTrainer:
                 self._batch_size = 64
                 self._seq_len = 64
         else:
-            self._batch_size = 64
-            self._seq_len = SEQ_LEN  # CPU can handle; just slower
+            self._batch_size = 16   # smaller batches are faster on CPU
+            self._seq_len = 32      # shorter context window speeds up CPU training
 
         self.model = FeedforwardLM(
             vocab_size=VOCAB_SIZE, d_model=D_MODEL, seq_len=self._seq_len

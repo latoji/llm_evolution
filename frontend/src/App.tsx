@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavBar } from "./components/NavBar";
 import { WSProvider } from "./context/WSContext";
+import { IngestProvider } from "./context/IngestContext";
 import { IngestPage, StatsPage, GeneratePage, DBPage, HelpPage } from "./pages";
 
 const queryClient = new QueryClient();
@@ -11,6 +12,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <WSProvider>
+        <IngestProvider>
         <BrowserRouter>
           <div className="min-h-screen bg-slate-50">
             <NavBar />
@@ -26,6 +28,7 @@ export default function App() {
             </main>
           </div>
         </BrowserRouter>
+        </IngestProvider>
       </WSProvider>
     </QueryClientProvider>
   );

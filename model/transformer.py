@@ -176,8 +176,8 @@ class TransformerTrainer:
                 self._batch_size = 64
                 self._seq_len = SEQ_LEN
         else:
-            self._batch_size = 64
-            self._seq_len = SEQ_LEN  # CPU can handle; just slower
+            self._batch_size = 16   # smaller batches are faster on CPU
+            self._seq_len = 32      # shorter context window speeds up CPU training
 
         self.model = TransformerLM(
             vocab_size=VOCAB_SIZE,

@@ -1,100 +1,29 @@
 /** IngestPage — upload corpus files and watch all 13 models train in real time. */
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { ChevronDown, ChevronUp, Pause } from "lucide-react";
 import { uploadFiles, pauseIngest } from "../api";
-import { useProgressSocket } from "../hooks/useProgressSocket";
-import { ACCURACY_QUERY_KEY } from "../hooks/useAccuracy";
-import type { WSMessage } from "../types";
-
-interface CompletedRun {
-  model: string;
-  text: string;
-  accuracy: number;
-}
+import { useIngestContext } from "../context/useIngestContext";
 
 export function IngestPage() {
-  const queryClient = useQueryClient();
+  const {
+    totalChunks,
+    completedChunks,
+    operation,
+    operationPct,
+    isRunning,
+    activeMCModel,
+    liveTokens,
+    completedRuns,
+    eventLog,
+    clearLog,
+  } = useIngestContext();
 
-  // Ingest progress state
-  const [totalChunks, setTotalChunks] = useState(0);
-  const [completedChunks, setCompletedChunks] = useState(0);
-  const [operation, setOperation] = useState<string | null>(null);
-  const [operationPct, setOperationPct] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-
-  // MC generation panel
-  const liveTokensRef = useRef("");
-  const [liveTokens, setLiveTokens] = useState("");
-  const [activeMCModel, setActiveMCModel] = useState<string | null>(null);
-  const [completedRuns, setCompletedRuns] = useState<CompletedRun[]>([]);
-
-  // Event log — buffered to avoid thrashing at high event rates
-  const eventBufferRef = useRef<WSMessage[]>([]);
-  const [eventLog, setEventLog] = useState<WSMessage[]>([]);
   const [showLog, setShowLog] = useState(false);
 
   // Upload / drop zone
   const [isDragging, setIsDragging] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
-
-  // Flush event buffer every 200 ms to keep the log from triggering per-event renders
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (eventBufferRef.current.length > 0) {
-        const pending = eventBufferRef.current.splice(0);
-        setEventLog((prev) => [...prev, ...pending].slice(-100));
-      }
-    }, 200);
-    return () => clearInterval(id);
-  }, []);
-
-  const handleEvent = useCallback(
-    (e: WSMessage) => {
-      eventBufferRef.current.push(e);
-
-      switch (e.type) {
-        case "chunk_start":
-          setTotalChunks(e.total_chunks);
-          setOperation(e.operation);
-          setOperationPct(0);
-          setIsRunning(true);
-          // Reset per-ingest counters on first chunk
-          if (e.chunk_index === 0) setCompletedChunks(0);
-          break;
-        case "chunk_progress":
-          setOperation(e.operation);
-          setOperationPct(e.pct);
-          break;
-        case "chunk_done":
-          setCompletedChunks((prev) => prev + 1);
-          break;
-        case "mc_token":
-          setActiveMCModel(e.model);
-          liveTokensRef.current += e.token;
-          setLiveTokens(liveTokensRef.current);
-          break;
-        case "mc_complete":
-          setCompletedRuns((prev) => [
-            { model: e.model, text: liveTokensRef.current, accuracy: e.accuracy },
-            ...prev.slice(0, 9),
-          ]);
-          liveTokensRef.current = "";
-          setLiveTokens("");
-          void queryClient.invalidateQueries({ queryKey: ACCURACY_QUERY_KEY });
-          break;
-        case "ingest_complete":
-          setIsRunning(false);
-          setOperation(null);
-          setOperationPct(0);
-          break;
-      }
-    },
-    [queryClient]
-  );
-
-  useProgressSocket(handleEvent);
 
   async function doUpload(files: File[]) {
     setUploadError(null);
@@ -238,13 +167,23 @@ export function IngestPage() {
 
       {/* Event log */}
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-        <button
-          className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-600 hover:bg-slate-50"
-          onClick={() => setShowLog((v) => !v)}
-        >
-          <span>Event log ({eventLog.length} events)</span>
-          {showLog ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center justify-between px-4 py-3">
+          <button
+            className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800"
+            onClick={() => setShowLog((v) => !v)}
+          >
+            {showLog ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span>Event log ({eventLog.length} events)</span>
+          </button>
+          {eventLog.length > 0 && (
+            <button
+              onClick={clearLog}
+              className="text-xs text-slate-400 hover:text-red-500"
+            >
+              Clear
+            </button>
+          )}
+        </div>
         {showLog && (
           <div className="max-h-64 overflow-y-auto border-t border-slate-100 font-mono text-xs text-slate-600 p-2 space-y-0.5">
             {eventLog.length === 0 && (
